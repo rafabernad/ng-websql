@@ -66,12 +66,12 @@ angular.module('angular.websql', [])
                     if (!column.null) {
                         colQuery += ' NOT NULL';
                     }
-                    if (column.default !== undefined) {
+                    //TODO: insert defaults
+                    /*if (column.default !== undefined) {
                         colQuery += ' DEFAULT ';
 
-                        //TODO: insert strings as strings
-                        //column.default;
-                    }
+                        
+                    }*/
 
                     return colQuery;
                 });
