@@ -41,3 +41,12 @@ As easy as creating your factories to define your database structure and your re
         //and so on
       });
     }])
+
+The only thing you need is the database details:
+
+    .constant('dbConfig', {
+        name: "sampleDb",
+        version: '1.0',
+        description: 'sample database',
+        size: -1
+    })
