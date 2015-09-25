@@ -1,0 +1,16 @@
+{
+  "name": "angular-websql",
+  "version": "0.0.1",
+  "description": "A webSQL wrapper for AngularJS",
+  "main": "angular-websql.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rafabernad/angular-websql.git"
+  },
+  "author": "Rafael Bernad de Castro",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/rafabernad/angular-websql/issues"
+  },
+  "homepage": "https://github.com/rafabernad/angular-websql#readme"
+}
