@@ -20,7 +20,7 @@ As easy as creating your factories to define your database structure and your re
             type: db.types.INTEGER,
         }],
         foreignKeys: {
-            'id': {
+            'key': {
               'parentTable': 'id'
             }
         },
