@@ -1,5 +1,5 @@
 # angular-websql
-A webSQL wrapper for AngularJS
+An easy to use webSQL wrapper for AngularJS
 
 As easy as creating your factories to define your database structure and your resource methods:
 
@@ -42,6 +42,53 @@ As easy as creating your factories to define your database structure and your re
       });
     }])
 
+It supports all the basic stuff anyone would need on a daily basis:
+
+### Foreign Keys
+
+    foreignKeys: {
+        'key': {
+            'parentTable': 'id'
+        }
+    },
+
+### Constrains
+
+    {
+        name: 'value',
+        type: db.types.INTEGER,
+        check: '> 2'
+    }
+
+
+### Triggers
+
+    {
+        name: 'value',
+        type: db.types.INTEGER,
+        check: '> 2',
+        triggers: {
+            update: {
+                name: "value-update", // optional, if not provided will generate with FIEL_NAME + '-' + INSERT|DELETE|UPDATE 
+                before: false, //so 'AFTER',
+                query: 'whatever sql statement'
+            }
+        }
+    }
+
+## Installation
+
+You can use bower:
+
+    bower install ng-websql
+
+Or npm:
+
+    npm install ng-websql
+
+That's it!
+
+## Configuration
 The only thing you need is the database details:
 
     .constant('dbConfig', {

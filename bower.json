@@ -1,0 +1,11 @@
+{
+  "name": "ng-websql",
+  "version": "0.0.2",
+  "homepage": "https://github.com/rafabernad/ng-websql",
+  "authors": [
+    "Rafael Bernad de Castro <rafa.bernad@outlook.com>"
+  ],
+  "description": "An unopinionated webSQL wrapper for AngularJS",
+  "main": "ng-websql.js",
+  "license": "Apache-2.0"
+}
