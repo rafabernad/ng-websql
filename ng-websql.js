@@ -98,12 +98,14 @@ angular.module('angular.websql', [])
                             triggerAction,
                             triggerName,
                             triggerBefore,
+                            triggerQuery,
                             trigger;
 
                         for (var action in props.triggers) {
                             triggerAction = action.toUpperCase();
-                            triggerName = props.triggers[action].name;
+                            triggerName = props.triggers[action].name || (props.name + '-' + action);
                             triggerBefore = props.triggers[action].before || false;
+                            triggerQuery = props.trigger[action].query;
 
                             trigger = 'CREATE TRIGGER IF NOT EXISTS ' + triggerName + ' ' + (triggerBefore ? 'BEFORE' : 'AFTER') +
                                 ' ' + triggerAction + ' ON ' + props.name + 'BEGIN ' + triggerQuery + ' END;';
