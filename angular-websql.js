@@ -102,7 +102,6 @@ angular.module('angular.websql', [])
                         } else {
                             colQuery += column.default;
                         }
-
                     }
                     if (column.check !== undefined) {
                         colQuery += ' CHECK ' + column.name + ' (' + column.check + ')';
