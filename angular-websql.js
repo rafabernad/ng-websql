@@ -19,7 +19,7 @@ angular.module('angular.websql', [])
 
 .provider('db', ['dbConfig', function(dbConfig) {
 
-    var $log =  angular.injector(['ng']).get('$log');
+    var $log = angular.injector(['ng']).get('$log');
 
     $log.debug("open database ", dbConfig.name, 'ver.', dbConfig.version);
     var db = window.openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
@@ -38,6 +38,35 @@ angular.module('angular.websql', [])
                 return output;
             }
 
+            // From: http://stackoverflow.com/questions/7744912/making-a-javascript-string-sql-friendly
+            function realEscapeString(str) {
+                if (typeof str != 'string')
+                    return str;
+
+                return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function(char) {
+                    switch (char) {
+                        case "\0":
+                            return "\\0";
+                        case "\x08":
+                            return "\\b";
+                        case "\x09":
+                            return "\\t";
+                        case "\x1a":
+                            return "\\z";
+                        case "\n":
+                            return "\\n";
+                        case "\r":
+                            return "\\r";
+                        case "\"":
+                        case "'":
+                        case "\\":
+                        case "%":
+                            return "\\" + char; // prepends a backslash to backslash, percent,
+                            // and double/single quotes
+                    }
+                });
+            }
+
             function fetch(result) {
                 return result.rows.item(0);
             }
@@ -45,14 +74,14 @@ angular.module('angular.websql', [])
             function resource(props) {
 
                 var deferred = $q.defer();
+                var columns = [];
+
 
                 if (resources[props.name]) {
                     return $q.reject(Error('Resource already exists'));
                 } else {
                     resources[props.name] = deferred.promise;
                 }
-
-                var columns = [];
 
                 columns = props.columns.map(function(column) {
                     var colQuery = column.name + ' ' + column.type;
@@ -68,9 +97,15 @@ angular.module('angular.websql', [])
                     }
                     if (column.default !== undefined) {
                         colQuery += ' DEFAULT ';
+                        if (angular.isString(column.default)) {
+                            colQuery += '\'' + column.default+'\'';
+                        } else {
+                            colQuery += column.default;
+                        }
 
-                        //TODO: insert strings as strings
-                        //column.default;
+                    }
+                    if (column.check !== undefined) {
+                        colQuery += ' CHECK ' + column.name + ' (' + column.check + ')';
                     }
 
                     return colQuery;
@@ -88,9 +123,31 @@ angular.module('angular.websql', [])
                 query += ')';
 
                 this.query(query).then(function() {
-                
-                    $log.debug('Table \'' + props.name + '\' created');
+                    if (props.triggers) {
+                        var triggers = [],
+                            triggerAction,
+                            triggerName,
+                            triggerBefore,
+                            trigger;
 
+                        for (var action in props.triggers) {
+                            triggerAction = action.toUpperCase();
+                            triggerName = props.triggers[action].name;
+                            triggerBefore = props.triggers[action].before || false;
+
+                            trigger = 'CREATE TRIGGER IF NOT EXISTS ' + triggerName + ' ' + (triggerBefore ? 'BEFORE' : 'AFTER') +
+                                ' ' + triggerAction + ' ON ' + props.name + 'BEGIN ' + triggerQuery + ' END;';
+
+                            triggers.push(this.query(trigger));
+
+                        }
+                        return $q.all(triggers);
+                    }
+                    return $q.resolve();
+
+                }.bind(this)).catch(function(error) {
+                    deferred.reject(error);
+                }).finally(function() {
                     var resourceDefinition = angular.extend({}, props);
                     delete resourceDefinition.name;
                     delete resourceDefinition.columns;
@@ -101,10 +158,10 @@ angular.module('angular.websql', [])
                     props = undefined;
 
                     angular.extend(deferred.promise, resourceDefinition);
-                    deferred.resolve(resourceDefinition);
 
-                }, function() {
-                    deferred.reject(Error("Can't create table " + props.name));
+                    $log.debug('Table \'' + props.name + '\' created');
+
+                    deferred.resolve(resourceDefinition);
                 });
 
                 return deferred.promise;
@@ -118,7 +175,7 @@ angular.module('angular.websql', [])
                     var deferred = $q.defer();
 
                     db.transaction(function(transaction) {
-                        transaction.executeSql(query, bindings, function(transaction, result) {
+                        transaction.executeSql(realEscapeString(query), bindings, function(transaction, result) {
                             deferred.resolve(result);
                         }, function(transaction, error) {
                             deferred.reject(error);
