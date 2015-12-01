@@ -22,7 +22,14 @@ angular.module('angular.websql', [])
     var $log = angular.injector(['ng']).get('$log');
 
     $log.debug("open database ", dbConfig.name, 'ver.', dbConfig.version);
-    var db = window.openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
+
+    var db;
+    if(window.cordova && window.sqlitePlugin) {
+        sqlitePlugin.openDatabase({name: dbConfig.name, location: 1});
+    } else {
+        db = window.openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
+    }
+    
     var resources = {};
 
     return {
@@ -127,11 +134,11 @@ angular.module('angular.websql', [])
 
                     resources[props.name] = resourceDefinition;
 
-                    props = undefined;
-
                     angular.extend(deferred.promise, resourceDefinition);
 
-                    $log.debug('Table \'' + props.name + '\' created');
+                    $log.debug('Table \'' + props.name + '\' created/loaded');
+
+                    props = undefined;
 
                     deferred.resolve(resourceDefinition);
                 });
