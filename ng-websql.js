@@ -3,6 +3,7 @@ angular.module('angular.websql', [])
 /*
 .constant('dbConfig', {
     name: "sampleDb",
+    location: dbLocations.DOCUMENTS,
     version: '1.0',
     description: 'database',
     size: -1
@@ -17,6 +18,12 @@ angular.module('angular.websql', [])
     NUMERIC: 'NUMERIC'
 })
 
+.constant('dbLocations', {
+    DOCUMENTS: 0, //Documents - visible to iTunes and backed up by iCloud
+    LIBRARY: 1, //backed up by iCloud, NOT visible to iTunes
+    DEVICE_ONLY: 2 //NOT visible to iTunes and NOT backed up by iCloud
+})
+
 .provider('db', ['dbConfig', function(dbConfig) {
 
     var $log = angular.injector(['ng']).get('$log');
@@ -29,29 +36,22 @@ angular.module('angular.websql', [])
     var resources = {};
 
     return {
-        $get: ['$q', 'dbTypes', function($q, dbTypes) {
+        $get: ['$q', 'dbTypes', 'dbLocations', function($q, dbTypes, dbLocations) {
 
             var dbPromise = $q.defer();
+
             if (window.cordova && window.sqlitePlugin) {
-                sqlitePlugin.openDatabase({
+                db = sqlitePlugin.openDatabase({
                     name: dbConfig.name,
-                    location: 1
-                }, openDatabaseSuccess, openDatabaseError);
+                    location: dbConfig.location || dbLocations.LIBRARY,
+                }, dbPromise.resolve, promise.reject);
             } else {
                 try {
                     db = window.openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
-                    openDatabaseSuccess();
+                    dbPromise.resolve(db);
                 } catch (e) {
-                    openDatabaseError(e);
+                    dbPromise.reject(e);
                 }
-            }
-
-            function openDatabaseSuccess() {
-                dbPromise.resolve(db);
-            }
-
-            function openDatabaseError(e) {
-                dbPromise.reject(e);
             }
 
             function fetchAll(result) {
