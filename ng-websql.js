@@ -24,16 +24,35 @@ angular.module('angular.websql', [])
     $log.debug("open database ", dbConfig.name, 'ver.', dbConfig.version);
 
     var db;
-    if(window.cordova && window.sqlitePlugin) {
-        sqlitePlugin.openDatabase({name: dbConfig.name, location: 1});
-    } else {
-        db = window.openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
-    }
-    
+
+
     var resources = {};
 
     return {
         $get: ['$q', 'dbTypes', function($q, dbTypes) {
+
+            var dbPromise = $q.defer();
+            if (window.cordova && window.sqlitePlugin) {
+                sqlitePlugin.openDatabase({
+                    name: dbConfig.name,
+                    location: 1
+                }, openDatabaseSuccess, openDatabaseError);
+            } else {
+                try {
+                    db = window.openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
+                    openDatabaseSuccess();
+                } catch (e) {
+                    openDatabaseError(e);
+                }
+            }
+
+            function openDatabaseSuccess() {
+                dbPromise.resolve(db);
+            }
+
+            function openDatabaseError(e) {
+                dbPromise.reject(e);
+            }
 
             function fetchAll(result) {
                 var output = [];
@@ -99,49 +118,52 @@ angular.module('angular.websql', [])
 
                 query += ')';
 
-                this.query(query).then(function() {
-                    if (props.triggers) {
-                        var triggers = [],
-                            triggerAction,
-                            triggerName,
-                            triggerBefore,
-                            triggerQuery,
-                            trigger;
+                dbPromise.promise.then(function() {
+                    this.query(query).then(function() {
+                        if (props.triggers) {
+                            var triggers = [],
+                                triggerAction,
+                                triggerName,
+                                triggerBefore,
+                                triggerQuery,
+                                trigger;
 
-                        for (var action in props.triggers) {
-                            triggerAction = action.toUpperCase();
-                            triggerName = props.triggers[action].name || (props.name + '-' + action);
-                            triggerBefore = props.triggers[action].before || false;
-                            triggerQuery = props.trigger[action].query;
+                            for (var action in props.triggers) {
+                                triggerAction = action.toUpperCase();
+                                triggerName = props.triggers[action].name || (props.name + '-' + action);
+                                triggerBefore = props.triggers[action].before || false;
+                                triggerQuery = props.trigger[action].query;
 
-                            trigger = 'CREATE TRIGGER IF NOT EXISTS ' + triggerName + ' ' + (triggerBefore ? 'BEFORE' : 'AFTER') +
-                                ' ' + triggerAction + ' ON ' + props.name + 'BEGIN ' + triggerQuery + ' END;';
+                                trigger = 'CREATE TRIGGER IF NOT EXISTS ' + triggerName + ' ' + (triggerBefore ? 'BEFORE' : 'AFTER') +
+                                    ' ' + triggerAction + ' ON ' + props.name + 'BEGIN ' + triggerQuery + ' END;';
 
-                            triggers.push(this.query(trigger));
+                                triggers.push(this.query(trigger));
 
+                            }
+                            return $q.all(triggers);
                         }
-                        return $q.all(triggers);
-                    }
-                    return $q.resolve();
+                        return $q.resolve();
 
-                }.bind(this)).catch(function(error) {
-                    deferred.reject(error);
-                }).finally(function() {
-                    var resourceDefinition = angular.extend({}, props);
-                    delete resourceDefinition.name;
-                    delete resourceDefinition.columns;
-                    delete resourceDefinition.foreignKeys;
+                    }.bind(this)).catch(function(error) {
+                        deferred.reject(error);
+                    }).finally(function() {
+                        var resourceDefinition = angular.extend({}, props);
+                        delete resourceDefinition.name;
+                        delete resourceDefinition.columns;
+                        delete resourceDefinition.foreignKeys;
 
-                    resources[props.name] = resourceDefinition;
+                        resources[props.name] = resourceDefinition;
 
-                    angular.extend(deferred.promise, resourceDefinition);
+                        angular.extend(deferred.promise, resourceDefinition);
 
-                    $log.debug('Table \'' + props.name + '\' created/loaded');
+                        $log.debug('Table \'' + props.name + '\' created/loaded');
 
-                    props = undefined;
+                        props = undefined;
 
-                    deferred.resolve(resourceDefinition);
-                });
+                        deferred.resolve(resourceDefinition);
+                    });
+
+                }.bind(this));
 
                 return deferred.promise;
 
@@ -153,13 +175,16 @@ angular.module('angular.websql', [])
                     bindings = typeof bindings !== 'undefined' ? bindings : [];
                     var deferred = $q.defer();
 
-                    db.transaction(function(transaction) {
-                        transaction.executeSql(query, bindings, function(transaction, result) {
-                            deferred.resolve(result);
-                        }, function(transaction, error) {
-                            deferred.reject(error);
+                    dbPromise.promise.then(function() {
+                        db.transaction(function(transaction) {
+                            transaction.executeSql(query, bindings, function(transaction, result) {
+                                deferred.resolve(result);
+                            }, function(transaction, error) {
+                                deferred.reject(error);
+                            });
                         });
                     });
+
 
                     return deferred.promise;
                 },
