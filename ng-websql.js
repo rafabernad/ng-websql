@@ -118,8 +118,8 @@ angular.module('angular.websql', [])
 
                 query += ')';
 
-                dbPromise.promise.then(function() {
-                    this.query(query).then(function() {
+                dbPromise.promise.then(angular.bind(this, function() {
+                    this.query(query).then(angular.bind(this, function() {
                         if (props.triggers) {
                             var triggers = [],
                                 triggerAction,
@@ -144,7 +144,7 @@ angular.module('angular.websql', [])
                         }
                         return $q.resolve();
 
-                    }.bind(this)).catch(function(error) {
+                    })).catch(function(error) {
                         deferred.reject(error);
                     }).finally(function() {
                         var resourceDefinition = angular.extend({}, props);
@@ -163,7 +163,7 @@ angular.module('angular.websql', [])
                         deferred.resolve(resourceDefinition);
                     });
 
-                }.bind(this));
+                }));
 
                 return deferred.promise;
 
