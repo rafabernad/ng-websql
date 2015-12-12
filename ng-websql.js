@@ -1,4 +1,4 @@
-(function(angular, window) {
+(function(angular, window, document) {
 
     'use strict';
 
@@ -21,10 +21,12 @@
                 var dbPromise = $q.defer();
 
                 if (window.cordova && window.sqlitePlugin) {
-                    db = sqlitePlugin.openDatabase({
-                        name: dbConfig.name,
-                        location: dbConfig.location || dbLocations.LIBRARY,
-                    }, dbPromise.resolve, promise.reject);
+                    document.addEventListener('deviceready', function() {
+                        db = sqlitePlugin.openDatabase({
+                            name: dbConfig.name,
+                            location: dbConfig.location || dbLocations.LIBRARY,
+                        }, dbPromise.resolve, promise.reject);
+                    }, false);
                 } else {
                     try {
                         db = window.openDatabase(dbConfig.name, dbConfig.version, dbConfig.description, dbConfig.size);
@@ -39,7 +41,7 @@
                  * @param  {object} result The SQL result returned by executing the query
                  * @return {array}        The array of records returned by the query
                  */
-                function fetchAll(result) {
+                var fetchAll = function(result) {
                     var output = [];
 
                     for (var i = 0; i < result.rows.length; i++) {
@@ -47,23 +49,23 @@
                     }
 
                     return output;
-                }
+                };
 
                 /**
                  * Parses a SQLite results and returns the first row
                  * @param  {object} result The SQL result
                  * @return {object}        The first record returned by the query
                  */
-                function fetch(result) {
+                var fetch = function(result) {
                     return result.rows.item(0);
-                }
+                };
 
                 /**
                  * Creates a table and a resource Factory definition with the defined methods
                  * @param  {object} props Resource factory methods and table definition
                  * @return {promise}       A promise that will be fulfilled on table creation and will contain a factory definition
                  */
-                function resource(props) {
+                var resource = function(props) {
 
                     var deferred = $q.defer();
                     var columns = [];
@@ -161,7 +163,7 @@
 
                     return deferred.promise;
 
-                }
+                };
 
                 var factoryDefinition = {
                     types: dbTypes,
@@ -221,4 +223,4 @@
 
     .provider('db', ['dbConfig', DbProvider]);
 
-} (angular, window));
+}(angular, window, document));
