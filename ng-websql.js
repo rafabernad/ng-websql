@@ -25,6 +25,7 @@
                         db = sqlitePlugin.openDatabase({
                             name: dbConfig.name,
                             location: dbConfig.location || dbLocations.LIBRARY,
+                            androidDatabaseImplementation: 2
                         }, dbPromise.resolve, dbPromise.reject);
                     }, false);
                 } else {
